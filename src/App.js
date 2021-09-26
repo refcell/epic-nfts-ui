@@ -3,6 +3,7 @@ import * as React from "react";
 import { ethers } from "ethers";
 import './App.css';
 import abi from "./utils/WavePortal.json";
+import twitterLogo from './assets/twitter-logo.svg';
 import TextField from '@material-ui/core/TextField';
 
 export default function App() {
