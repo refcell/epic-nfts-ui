@@ -12,6 +12,11 @@ export default function App() {
   const [allWaves, setAllWaves] = React.useState([]);
   const [message, setMessage] = React.useState("");
 
+  const TWITTER_HANDLE = 'andreasbigger';
+  const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
+  const OPENSEA_LINK = '';
+  const TOTAL_MINT_COUNT = 1337;
+
   const contractAddress = "0x4260566c959ac89891A7D3AC053d1772303f51c3";
   const contractABI = abi.abi;
 
@@ -133,33 +138,15 @@ export default function App() {
 
       <div className="dataContainer">
         <div className="header">
-        <span role="img" aria-label="wave">👋</span> Hey there!
-        </div>
-
-        <div className="bio">
-        I am Andreas and I'm an undergraduate at USC majoring in computer science! Connect your Ethereum wallet and wave at me!
+        <span role="img" aria-label="wave">⚡</span> EpicNFTs <span role="img" aria-label="wave">📄</span>
         </div>
 
         <div className="bio">
         Current Minted EpicNFTs: {currWaveCount}
         </div>
 
-        {/* <TextField
-          id="filled-full-width"
-          label="Message"
-          style={{ margin: 8 }}
-          placeholder="Enter your message here..."
-          fullWidth
-          margin="normal"
-          InputLabelProps={{
-            shrink: true,
-          }}
-          variant="filled"
-          onBlur={(e) => setMessage(e.target.value)}
-        /> */}
-
         <button className="waveButton" onClick={wave}>
-          Mint a contract!
+          Mint an EpicNFT!
         </button>
 
         {currAccount ? null : (
@@ -178,6 +165,15 @@ export default function App() {
           )
         })}
       </div>
+      <div className="footer-container">
+          <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
+          <a
+            className="footer-text"
+            href={TWITTER_LINK}
+            target="_blank"
+            rel="noreferrer"
+          >{`built on @${TWITTER_HANDLE}`}</a>
+        </div>
     </div>
   );
 }
