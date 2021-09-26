@@ -141,10 +141,10 @@ export default function App() {
         </div>
 
         <div className="bio">
-        Current Waves: {currWaveCount}
+        Current Minted EpicNFTs: {currWaveCount}
         </div>
 
-        <TextField
+        {/* <TextField
           id="filled-full-width"
           label="Message"
           style={{ margin: 8 }}
@@ -156,10 +156,10 @@ export default function App() {
           }}
           variant="filled"
           onBlur={(e) => setMessage(e.target.value)}
-        />
+        /> */}
 
         <button className="waveButton" onClick={wave}>
-          Wave at Me
+          Mint a contract!
         </button>
 
         {currAccount ? null : (
