@@ -26,11 +26,11 @@
 
 .waveButton {
   cursor: pointer;
-  margin-top: 16px;
-  padding: 8px;
+  /* margin-top: 16px; */
+  padding: 1em;
   border: 0;
   border-radius: 5px;
-  
+  margin: 1em;
 }
 
 .App {

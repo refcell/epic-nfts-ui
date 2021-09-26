@@ -135,38 +135,25 @@ export default function App() {
   }, [])
 
   return (
-    <div className="mainContainer">
-
-      <div className="dataContainer">
-        <div className="header">
-        <span role="img" aria-label="wave">⚡</span> EpicNFTs <span role="img" aria-label="wave">📄</span>
-        </div>
-
-        <div className="bio">
-        Current Minted EpicNFTs: {currWaveCount}
-        </div>
-
-        <button className="waveButton" onClick={wave}>
-          Mint an EpicNFT!
-        </button>
-
-        {currAccount ? null : (
-          <button className="waveButton" onClick={connectWallet}>
-            Connect Wallet
+    <div className="App">
+      <div className="container">
+        <div className="header-container">
+          <p className="header gradient-text">
+            <span role="img" aria-label="wave">⚡</span> EpicNFTs <span role="img" aria-label="wave">📄</span>
+          </p>
+          <p className="sub-text">
+            Each unique. Each beautiful. Discover your NFT today.
+          </p>
+          <button className="waveButton cta-button connect-wallet-button" onClick={wave}>
+            Mint an EpicNFT!
           </button>
-        )}
-
-        {allWaves.map((wave, index) => {
-          return (
-            <div key={Object.entries(wave).toString() + index.toString()} style={{backgroundColor: "OldLace", marginTop: "16px", padding: "8px"}}>
-              <div>Address: {wave.address}</div>
-              <div>Time: {wave.timestamp.toString()}</div>
-              <div>Message: {wave.message}</div>
-            </div>
-          )
-        })}
-      </div>
-      <div className="footer-container">
+          {currAccount ? null : (
+            <button className="waveButton cta-button connect-wallet-button" onClick={connectWallet}>
+              Connect Wallet
+            </button>
+          )}
+        </div>
+        <div className="footer-container">
           <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
           <a
             className="footer-text"
@@ -175,6 +162,49 @@ export default function App() {
             rel="noreferrer"
           >{`built on @${TWITTER_HANDLE}`}</a>
         </div>
+      </div>
     </div>
+  
+    // <div className="mainContainer">
+
+    //   <div className="dataContainer">
+    //     <div className="header">
+    //     <span role="img" aria-label="wave">⚡</span> EpicNFTs <span role="img" aria-label="wave">📄</span>
+    //     </div>
+
+    //     <div className="bio">
+    //     Current Minted EpicNFTs: {currWaveCount}
+    //     </div>
+
+    //     <button className="waveButton" onClick={wave}>
+    //       Mint an EpicNFT!
+    //     </button>
+
+    //     {currAccount ? null : (
+    //       <button className="waveButton" onClick={connectWallet}>
+    //         Connect Wallet
+    //       </button>
+    //     )}
+
+    //     {allWaves.map((wave, index) => {
+    //       return (
+    //         <div key={Object.entries(wave).toString() + index.toString()} style={{backgroundColor: "OldLace", marginTop: "16px", padding: "8px"}}>
+    //           <div>Address: {wave.address}</div>
+    //           <div>Time: {wave.timestamp.toString()}</div>
+    //           <div>Message: {wave.message}</div>
+    //         </div>
+    //       )
+    //     })}
+    //   </div>
+    //   <div className="footer-container">
+    //       <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
+    //       <a
+    //         className="footer-text"
+    //         href={TWITTER_LINK}
+    //         target="_blank"
+    //         rel="noreferrer"
+    //       >{`built on @${TWITTER_HANDLE}`}</a>
+    //     </div>
+    // </div>
   );
 }
