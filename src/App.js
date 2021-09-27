@@ -10,7 +10,7 @@ const BUILDSPACE_TWITTER_HANDLE = "_buildspace";
 const BUILDSPACE_TWITTER_LINK = `https://twitter.com/${BUILDSPACE_TWITTER_HANDLE}`;
 const TWITTER_HANDLE = 'andreasbigger';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
-const CONTRACT_ADDRESS = "0x908f9AfF6eE262946d5A350c2C0e0388670cf5E4";
+const CONTRACT_ADDRESS = "0x0a2315A245c0E9d3F0275e0733892Ed76Aa2d6d6";
 const CONTRACT_ABI = abi.abi;
 
 export default function App() {
