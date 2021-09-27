@@ -68,11 +68,26 @@ md:p-16 {
   margin: 1em;
 }
 
+.rainbow {
+  background-color: black;
+  background-image: linear-gradient(
+    to right,
+    var(--light-purple),
+    var(--purple),
+    var(--blue),
+    var(--green),
+    var(--yellow),
+    var(--orange),
+    var(--red)
+  );
+}
+
 .App {
   height: 100vh;
   background-color: #0d1116;
   overflow: scroll;
   text-align: center;
+  font-family: "Azeret Mono", monospace;
 }
 
 .container {
@@ -96,6 +111,7 @@ md:p-16 {
 .sub-text {
   font-size: 16px;
   color: white;
+  /* color: linear-gradient() */
 }
 
 .gradient-text {
@@ -229,4 +245,26 @@ md:p-16 {
   100% {
     background-position: 0% 50%;
   }
+}
+
+.bg-clip-text {
+  background-clip: text;
+}
+
+.text-transparent {
+  -webkit-text-fill-color: transparent;
+}
+
+.font-bold {
+  font-weight: bold;
+}
+
+:root {
+  --light-purple: #ac62ed;
+  --purple: #4e00e0;
+  --blue: #38aef4;
+  --green: #4bde79;
+  --yellow: #ffed26;
+  --orange: #ffae5f;
+  --red: #ff5353;
 }

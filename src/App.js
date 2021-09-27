@@ -122,11 +122,12 @@ export default function App() {
           setCurrMintCount(currMintCount + 1);
 
           console.log("Inside Event listener - sender:", sender);
+          console.log(currAccount);
           console.log("Inside Event Listener - currAccount:", currAccount);
+          console.log("Inside Event Listener - tokenId:", tokenId);
           if (currAccount === sender) {
             setMyEpicNfts(oldArray => [...oldArray, {
               address: sender,
-              // timestamp: new Date(timestamp * 1000),
               tokenId: tokenId,
               opensea: `https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`
             }])
@@ -167,7 +168,7 @@ export default function App() {
             <img alt="Contract Logo" className="contract-logo" src={contractSVG} />
           </p>
           <p className="sub-text">
-            Unique, Beautiful Dinosaurs and Caves inspired by {" "}
+            Unique, Beautiful <span className="rainbow bg-clip-text text-transparent font-bold">Dinosaurs and Caves</span> inspired by {" "}
             <span className="loot-gradient-text">
               <a
                 className="no-decoration"
