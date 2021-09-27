@@ -25,6 +25,10 @@
   justify-content: center;
 }
 
+.lh15 {
+  line-height: 1.5em;
+}
+
 .heart-logo {
   height: 20px;
   margin-top: auto;
@@ -170,6 +174,17 @@ md:p-16 {
   animation: gradient-animation 4s ease infinite;
 }
 
+.mining-logo, confirmed-logo, loading-logo {
+  max-height: 200px;
+  margin-top: 1em;
+}
+
+.opensea-button {
+  background-color: #475c64 !important;
+  margin: 1em;
+  padding: 1em;
+}
+
 .mint-button {
   background: -webkit-linear-gradient(left, #a200d6, #ff6fdf);
   background-size: 200% 200%;
@@ -207,13 +222,13 @@ md:p-16 {
 }
 
 .contract-logo {
-  width: 30px;
+  width: 36px;
   align-items: center;
   justify-content: center;
-  height: 30px;
+  height: 36px;
   margin-top: auto;
   margin-bottom: auto;
-  padding-left: 0.1em;
+  padding-left: 0.3em;
 }
 
 .white-text {
