@@ -4,6 +4,8 @@ import { ethers } from "ethers";
 import './App.css';
 import abi from "./utils/TheEpics.json";
 import contractSVG from './assets/contract.svg';
+import { ToastContainer, toast } from 'material-react-toastify';
+import 'material-react-toastify/dist/ReactToastify.css';
 
 // ** Immutables
 const BUILDSPACE_TWITTER_HANDLE = "_buildspace";
@@ -96,10 +98,10 @@ export default function App() {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     const eContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    // let max_count = await eContract.getMaxMintCount();
-    // setMaxMintCount(max_count.toNumber());
-    // let curr_count = await eContract.currentMintCount();
-    // setCurrMintCount(curr_count.toNumber());
+    let max_count = await eContract.getMaxMintCount();
+    setMaxMintCount(max_count.toNumber());
+    let curr_count = await eContract.currentMintCount();
+    setCurrMintCount(curr_count.toNumber());
   }
 
   // ** Setup our listener
@@ -130,7 +132,14 @@ export default function App() {
             }])
           }
 
-          // TODO: send a react-toast-notif that one was minted
+          toast.success(`🦄 NFT Minted! View at: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`, {
+            position: "top-left",
+            autoClose: 3000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            });
         });
 
         console.log("Setup event listener!")
@@ -149,6 +158,7 @@ export default function App() {
 
   return (
     <div className="App">
+      <ToastContainer />
       <div className="container">
         <div className="header-container">
           <p className="header">
@@ -173,7 +183,14 @@ export default function App() {
             <span className="bio-text">{currMintCount}/{maxMintCount}</span> Epics have been minted!
           </div>
           {currAccount ? (
-            <button className="waveButton cta-button connect-wallet-button" onClick={askContractToMintNft}>
+            <button
+              disabled={currMintCount >= maxMintCount ? true : false}
+              className="waveButton cta-button connect-wallet-button"
+              onClick={askContractToMintNft}
+              style={{
+                opacity: currMintCount >= maxMintCount ? 0.5 : 1,
+              }}
+              >
               Mint an Epic!
             </button>
           ) : null}
@@ -238,7 +255,7 @@ export default function App() {
           <div className="footer-container text-sm">
             {/* <img alt="Unicorn Logo" className="uni-logo" src={twitterLogo} /> */}
             <p className="white-text">
-              h/t{" "}
+              🦄 h/t{" "}
               <a
                 className="footer-text"
                 href={BUILDSPACE_TWITTER_LINK}
