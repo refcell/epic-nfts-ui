@@ -20,12 +20,14 @@ const TWITTER_HANDLE = 'andreasbigger';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 const CONTRACT_ADDRESS = "0x9548a49f25b1C80FB451ec40cC0401C067D4F6AF";
 const CONTRACT_ABI = abi.abi;
+const OPENSEA_COLLECTION_URL = "https://testnets.opensea.io/collection/the-epics-v2";
 
 export default function App() {
-  const [currAccount, setCurrentAccount] = useState("");
+  const [currAccount, setCurrentAccount] = useState(null);
   const [currMintCount, setCurrMintCount] = useState(0);
   const [maxMintCount, setMaxMintCount] = useState(1337);
   const [myEpicNfts, setMyEpicNfts] = useState([]);
+  const [toastLink, setToastLink] = useState("");
 
   // ** Mining state variables
   const [isMining, setIsMining] = useState(false);
@@ -39,17 +41,15 @@ export default function App() {
   const checkIfWalletIsConnected = () => {
     const { ethereum } = window;
     if(!ethereum) {
-      console.error("Make sure you have Metamask!");
+      toast.error('🦊 Missing Metamask!', {
+        position: "top-left",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return
-    } else {
-      console.log("We have the ethereum object!", ethereum)
-      try {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        console.log("Current address:", signer)
-      } catch (e) {
-        console.error("failed to extract <target>");
-      }
     }
 
     // ** Try to get access to the user's wallet
@@ -60,27 +60,34 @@ export default function App() {
       // ** There could be multiple accounts
       if(accounts.length !== 0) {
         // ** Get the first account
-        const account = accounts[0];
+        let account = accounts[0].toString().toLowerCase();
         console.log("setting current account:", account);
 
         // ** Store the account
-        setCurrentAccount(_old_account => account);
+        setCurrentAccount(account);
 
         // ** Load Account Gallery
-        loadGallery();
+        loadGallery(account);
 
         // ** Get the contract mint count info
         getMintCounts();
 
         // ** Set up our event listener
-        setupEventListener();
+        setupEventListener(account);
       } else {
-        console.error("No authorized account found!");
+        toast.error('No authorized accounts found! Please connect a metamask account!', {
+          position: "top-left",
+          autoClose: 3000,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       }
     })
   }
 
-  const loadGallery = async () => {
+  const loadGallery = async (account) => {
     setLoadingGallery(true);
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
@@ -88,17 +95,12 @@ export default function App() {
     let eventFilter = eContract.filters.EpicMinted();
     let events = await eContract.queryFilter(eventFilter)
     let tokens = [];
-    console.log("Found Events!", events);
     await Promise.all(events.map(async (e, i) => {
       let tx_res = await e.getTransaction();
-      let address = tx_res.from;
-      console.log(address);
-      console.log(currAccount);
-      console.log("address == currAccount?", address == currAccount);
-      // TODO: verify this == our current account
-      tokens.push({ tokenId: i, address: address });
-      // if(address == currAccount) {
-      // }
+      let address = tx_res.from.toString().toLowerCase();
+      if(address.trim() === account.trim()) {
+        tokens.push({ tokenId: i, address: address });
+      }
     }));
     setMyEpicNfts(tokens);
     setLoadingGallery(false);
@@ -120,16 +122,25 @@ export default function App() {
 
     ethereum.request({ method: 'eth_requestAccounts' })
     .then((accounts) => {
-      console.log("Connected:", accounts[0]);
-      // setCurrentAccount(accounts[0]);
+      let account = accounts[0].toString().toLowerCase();
+      setCurrentAccount(account);
 
       // ** Get the contract mint count info
       getMintCounts();
 
       // ** Set up our event listener
-      setupEventListener();
+      setupEventListener(account);
     })
-    .catch((e) => console.log(e))
+    .catch((e) => {
+      toast.error('Failed to load metamask accounts! Please refresh the page!', {
+        position: "top-left",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    })
   }
 
   const askContractToMintNft = async () => {
@@ -142,7 +153,20 @@ export default function App() {
         const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
         console.log("Going to pop wallet now to pay gas...")
-        let nftTxn = await connectedContract.makeAnEpicNFT();
+        let nftTxn;
+        try {
+          nftTxn = await connectedContract.makeAnEpicNFT();
+        } catch (er) {
+          toast.error('🚨 Rejected Transaction 🚨', {
+            position: "top-left",
+            autoClose: 3000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+          return;
+        }
         setIsMining(true);
 
         console.log("Mining...please wait.")
@@ -156,7 +180,14 @@ export default function App() {
         console.log("Ethereum object doesn't exist!");
       }
     } catch (error) {
-      console.log(error)
+      toast.error('🎟️ Failed to mint, please try again!', {
+        position: "top-left",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   }
 
@@ -172,7 +203,7 @@ export default function App() {
   }
 
   // ** Setup our listener
-  const setupEventListener = async () => {
+  const setupEventListener = async (account) => {
     try {
       const { ethereum } = window;
 
@@ -181,47 +212,43 @@ export default function App() {
         const signer = provider.getSigner();
         const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-        console.log("got signer:", signer);
-
         connectedContract.on("EpicMinted", (id, from) => {
           let tokenId = id.toNumber();
-          let sender = from;
-
-          console.log("inside connectedContract.on EpicMinted")
+          // let sender = from;
 
           // ** Update the current minted count
           setCurrMintCount(tokenId + 1);
 
-          loadGallery();
-          // console.log("Inside Event listener - sender:", sender);
-          // console.log(currAccount);
-          // console.log("Inside Event Listener - currAccount:", currAccount);
-          // console.log("Inside Event Listener - tokenId:", tokenId);
-          // if (currAccount === sender) {
-          //   setMyEpicNfts(oldArray => [...oldArray, {
-          //     address: sender,
-          //     tokenId: tokenId,
-          //     opensea: `https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`
-          //   }])
-          // }
+          // ** Load new Gallery
+          loadGallery(account);
 
-          toast.success(`🦄 NFT Minted! View at:\n <https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}>`, {
+          // ** Set toast link
+          setToastLink(`https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`);
+
+          toast(`🦄 NFT Minted!`, {
             position: "top-left",
             autoClose: 3000,
             hideProgressBar: true,
             closeOnClick: true,
             pauseOnHover: true,
             draggable: true,
-            });
+          });
+
+          // ** Reset Toast link after toast duration
+          setTimeout(() => setToastLink(OPENSEA_COLLECTION_URL), 3000);
         });
-
-        console.log("Setup event listener!")
-
       } else {
         console.log("Ethereum object doesn't exist!");
       }
     } catch (error) {
-      console.log(error)
+      toast.warn('Not your fault, we failed to set up notifications for minting! This means you\'ll have to refresh the page when you finish minting :)', {
+        position: "top-left",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   }
 
@@ -233,7 +260,13 @@ export default function App() {
 
   return (
     <div className="App">
-      <ToastContainer />
+      <a
+        href={toastLink}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <ToastContainer />
+      </a>
       <div className="container">
         <div className="header-container">
           <p className="header">
@@ -257,32 +290,50 @@ export default function App() {
           <div className="bio">
             <span className="bio-text">{currMintCount}/{maxMintCount}</span> Epics have been minted!
           </div>
-          {currAccount && !isMining && !isConfirmed ? (
-            <button
-              disabled={currMintCount >= maxMintCount ? true : false}
-              className="waveButton cta-button connect-wallet-button"
-              onClick={askContractToMintNft}
-              style={{
-                opacity: currMintCount >= maxMintCount ? 0.5 : 1,
-              }}
-              >
-              Mint an Epic!
-            </button>
-          ) : null}
-          {currAccount && isMining && !isConfirmed ? (
-            <>
-              <img alt="Mining Logo" className="mining-logo" src={miningSVG} />
-              <p style={{ fontStyle: 'italic', color: 'white', paddingBottom: '0.5em' }}>your transaction is being mined...</p>
-            </>
-          ) : null}
-          {currAccount && !isMining && isConfirmed ? (
-            <img alt="Confirmed Logo" className="confirmed-logo" src={confirmedSVG} />
-          ) : null}
-          {currAccount ? null : (
-            <button className="waveButton cta-button connect-wallet-button" onClick={connectWallet}>
-              Connect Wallet
-            </button>
-          )}
+          <div style={{display: 'flex', flexDirection:'column'}}>
+            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: 'auto'}}>
+              {currAccount && !isMining && !isConfirmed ? (
+                <button
+                  disabled={currMintCount >= maxMintCount ? true : false}
+                  className="waveButton cta-button connect-wallet-button"
+                  onClick={askContractToMintNft}
+                  style={{
+                    opacity: currMintCount >= maxMintCount ? 0.5 : 1,
+                  }}
+                  >
+                  Mint an Epic!
+                </button>
+              ) : null}
+              <button
+                className="cta-button opensea-button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  if(window) {
+                    window.open(OPENSEA_COLLECTION_URL, "_blank")
+                  }
+                }}
+                >
+                Opensea Collection <span style={{marginLeft: '0.2em'}}>🌊</span>
+              </button>
+            </div>
+            {currAccount && isMining && !isConfirmed ? (
+              <div style={{display: 'flex', flexDirection: 'column', margin: 'auto'}}>
+                <img alt="Mining Logo" className="mining-logo" src={miningSVG} />
+                <p style={{ fontStyle: 'italic', color: 'white', paddingBottom: '0.5em' }}>your transaction is being mined...</p>
+              </div>
+            ) : null}
+            {currAccount && !isMining && isConfirmed ? (
+              <div style={{display: 'flex', flexDirection: 'column', margin: 'auto'}}>
+                <img alt="Confirmed Logo" className="confirmed-logo" src={confirmedSVG} /
+                >
+              </div>
+            ) : null}
+            {currAccount ? null : (
+              <button className="waveButton cta-button connect-wallet-button" onClick={connectWallet}>
+                Connect Wallet
+              </button>
+            )}
+          </div>
 
           <div
             style={{
@@ -384,7 +435,7 @@ export default function App() {
           </div>
           <div className="text-sm p-5 md:p-16 white-text">
             <A href={`https://rinkeby.etherscan.io/address/${CONTRACT_ADDRESS}`}>Etherscan</A> &bull;{" "}
-            <A href="https://testnets.opensea.io/collection/the-epics-v2">OpenSea</A> &bull;{" "}
+            <A href={OPENSEA_COLLECTION_URL}>OpenSea</A> &bull;{" "}
             <A href="https://github.com/abigger87/epic-nfts">Contract Source</A> &bull;{" "}
             <A href="https://github.com/abigger87/epic-nfts-ui">UI Source</A> &bull;{" "}
             <A href="https://twitter.com/andreasbigger">Twitter</A> &bull;{" "}
