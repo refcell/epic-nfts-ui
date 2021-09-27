@@ -1,5 +1,5 @@
 <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 150px; height: 150px;"><style>
-     .line-file2 {animation:line-file2-tick 2s infinite;}
+     .line-file2 {animation:line-file2-tick 4s infinite;}
      @keyframes line-file2-tick {
          20%{stroke-dashoffset: 110;}
          60%{stroke-dashoffset: 0;}

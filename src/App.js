@@ -1,11 +1,16 @@
 /* eslint-disable */
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
+import { ToastContainer, toast } from 'material-react-toastify';
+
 import './App.css';
+import 'material-react-toastify/dist/ReactToastify.css';
+
 import abi from "./utils/TheEpics.json";
 import contractSVG from './assets/contract.svg';
-import { ToastContainer, toast } from 'material-react-toastify';
-import 'material-react-toastify/dist/ReactToastify.css';
+import miningSVG from './assets/3dprinting.svg';
+import confirmedSVG from './assets/checked_contract.svg';
+import heartSVG from './assets/heart.svg';
 
 // ** Immutables
 const BUILDSPACE_TWITTER_HANDLE = "_buildspace";
@@ -20,6 +25,10 @@ export default function App() {
   const [currMintCount, setCurrMintCount] = useState(0);
   const [maxMintCount, setMaxMintCount] = useState(1337);
   const [myEpicNfts, setMyEpicNfts] = useState([]);
+
+  // ** Mining state variables
+  const [isMining, setIsMining] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   // ** Try to connect to wallet
   const checkIfWalletIsConnected = () => {
@@ -64,6 +73,12 @@ export default function App() {
     .then((accounts) => {
       console.log("Connected:", accounts[0]);
       setCurrentAccount(accounts[0]);
+
+        // ** Get the contract mint count info
+        getMintCounts();
+
+        // ** Set up our event listener
+        setupEventListener();
     })
     .catch((e) => console.log(e))
   }
@@ -79,12 +94,15 @@ export default function App() {
 
         console.log("Going to pop wallet now to pay gas...")
         let nftTxn = await connectedContract.makeAnEpicNFT();
+        setIsMining(true);
 
         console.log("Mining...please wait.")
         await nftTxn.wait();
+        setIsMining(false);
 
         console.log(`Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`);
-
+        setIsConfirmed(true);
+        setTimeout(() => setIsConfirmed(false), 4000);
       } else {
         console.log("Ethereum object doesn't exist!");
       }
@@ -119,7 +137,7 @@ export default function App() {
           let sender = from;
 
           // ** Update the current minted count
-          setCurrMintCount(currMintCount + 1);
+          setCurrMintCount(tokenId + 1);
 
           console.log("Inside Event listener - sender:", sender);
           console.log(currAccount);
@@ -133,7 +151,7 @@ export default function App() {
             }])
           }
 
-          toast.success(`🦄 NFT Minted! View at: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`, {
+          toast.success(`🦄 NFT Minted! View at:\n <https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}>`, {
             position: "top-left",
             autoClose: 3000,
             hideProgressBar: true,
@@ -183,7 +201,7 @@ export default function App() {
           <div className="bio">
             <span className="bio-text">{currMintCount}/{maxMintCount}</span> Epics have been minted!
           </div>
-          {currAccount ? (
+          {currAccount && !isMining && !isConfirmed ? (
             <button
               disabled={currMintCount >= maxMintCount ? true : false}
               className="waveButton cta-button connect-wallet-button"
@@ -195,36 +213,47 @@ export default function App() {
               Mint an Epic!
             </button>
           ) : null}
+          {currAccount && isMining && !isConfirmed ? (
+            <>
+              <img alt="Mining Logo" className="mining-logo" src={miningSVG} />
+              <p style={{ fontStyle: 'italic', color: 'white', paddingBottom: '0.5em' }}>your transaction is being mined...</p>
+            </>
+          ) : null}
+          {currAccount && !isMining && isConfirmed ? (
+            <img alt="Confirmed Logo" className="confirmed-logo" src={confirmedSVG} />
+          ) : null}
           {currAccount ? null : (
             <button className="waveButton cta-button connect-wallet-button" onClick={connectWallet}>
               Connect Wallet
             </button>
           )}
 
-          {myEpicNfts.length > 0 ? (
-            <p className="sub-text">
-              You just minted these Epics!
-            </p>
-          ) : (
-            currAccount ?
-            (<div>
-            <p className="sub-text">
-              Wallet{" "}
-              <a
-                className="no-decoration"
-                href={`https://etherscan.io/${currAccount}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {currAccount.substring(0, 4)}..{currAccount.substring(currAccount.length - 2)}
-              </a>
-              {" "}hasn't minted any Epics recently!
-            </p>
-            <p className="sub-text">
-              Mint some, and they'll show up here!
-            </p>
-            </div>) : null
-          )}
+          <div style={{paddingTop: '1em'}}>
+            {myEpicNfts.length > 0 ? (
+              <p className="sub-text">
+                You just minted these Epics!
+              </p>
+            ) : (
+              currAccount ?
+              (<div>
+              <p className="sub-text">
+                Wallet{" "}
+                <a
+                  className="no-decoration"
+                  href={`https://etherscan.io/${currAccount}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {currAccount.substring(0, 4)}..{currAccount.substring(currAccount.length - 2)}
+                </a>
+                {" "}hasn't minted any Epics recently!
+              </p>
+              <p className="sub-text">
+                Mint some, and they'll show up here!
+              </p>
+              </div>) : null
+            )}
+          </div>
           {myEpicNfts.map((epic, index) => {
             return (
               <div key={Object.entries(epic).toString() + index.toString()} style={{backgroundColor: "OldLace", marginTop: "16px", padding: "8px"}}>
@@ -241,10 +270,14 @@ export default function App() {
         </div>
         <div className="footer-wrapper">
           <div className="footer-container text-sm">
-            <p className="white-text">
-              Built with ❤️️ by{" "}
+            <p className="white-text align-center">
+              Built with{" "}
+              <img alt="Heart Logo" className="heart-logo" src={heartSVG} />
+              {" "}
+              by
+              {" "}
               <a
-                className="footer-text"
+                className="footer-text sm-pl"
                 href={TWITTER_LINK}
                 target="_blank"
                 rel="noreferrer"
