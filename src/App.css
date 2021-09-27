@@ -16,12 +16,47 @@
   text-align: center;
   font-size: 32px;
   font-weight: 600;
+  display: flex;
+  justify-content: center;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.p-5 {
+  padding: 1.25rem;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.text-blue-500 {
+  --tw-text-opacity: 1;
+  color: #35aee2;
+}
+
+md:p-16 {
+  padding: 4rem;
+}
+
+.bio-text {
+  background-color: white;
+  color: black;
+  width: fit-content;
+  padding: 0.2em;
 }
 
 .bio {
   text-align: center;
-  color: gray;
-  margin-top: 16px;
+  color: white;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .waveButton {
@@ -45,7 +80,7 @@
   background-color: #0d1116;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  /* justify-content: space-between; */
 }
 
 .header-container {
@@ -59,7 +94,7 @@
 } */
 
 .sub-text {
-  font-size: 25px;
+  font-size: 16px;
   color: white;
 }
 
@@ -70,15 +105,28 @@
   -webkit-text-fill-color: transparent;
 }
 
+.loot-gradient-text {
+  background: -webkit-linear-gradient(left, #999999, #BBBBBB);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-animation 4s ease infinite;
+}
+
+.no-decoration {
+  text-decoration: none;
+  color: #35aee2;
+}
+
 .cta-button {
   height: 45px;
   border: 0;
   width: auto;
-  padding-left: 40px;
-  padding-right: 40px;
+  /* padding-left: 40px;
+  padding-right: 40px; */
   border-radius: 5px;
   cursor: pointer;
-  font-size: 16px;
+  /* font-size: 16px; */
   font-weight: bold;
   color: white;
 }
@@ -106,22 +154,46 @@
   font-weight: bold;
 }
 
+.footer-wrapper {
+  display: flex;
+  margin-top: auto;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: 1em;
+}
+
 .footer-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-bottom: 30px;
 }
 
 .twitter-logo {
-  width: 35px;
-  height: 35px;
+  width: 30px;
+  height: 30px;
+}
+
+.contract-logo {
+  width: 30px;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  margin-top: auto;
+  margin-bottom: auto;
+  padding-left: 0.1em;
+}
+
+.white-text {
+  color: white;
+  padding: 0;
+  margin: 0.1em;
 }
 
 .footer-text {
-  color: white;
+  color: #35aee2;
   font-size: 16px;
   font-weight: bold;
+  text-decoration: none;
 }
 
 /* KeyFrames */

@@ -1,31 +1,29 @@
 /* eslint-disable */
-import * as React from "react";
+import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import './App.css';
-import abi from "./utils/WavePortal.json";
-import twitterLogo from './assets/twitter-logo.svg';
-import TextField from '@material-ui/core/TextField';
+import abi from "./utils/TheEpics.json";
+import contractSVG from './assets/contract.svg';
+
+// ** Immutables
+const BUILDSPACE_TWITTER_HANDLE = "_buildspace";
+const BUILDSPACE_TWITTER_LINK = `https://twitter.com/${BUILDSPACE_TWITTER_HANDLE}`;
+const TWITTER_HANDLE = 'andreasbigger';
+const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
+const CONTRACT_ADDRESS = "0x908f9AfF6eE262946d5A350c2C0e0388670cf5E4";
+const CONTRACT_ABI = abi.abi;
 
 export default function App() {
-  // Store the user's account as a state variable
-  const [currAccount, setCurrentAccount] = React.useState("");
-  const [currWaveCount, setCurrentWaveCount] = React.useState(0);
-  const [allWaves, setAllWaves] = React.useState([]);
-  const [message, setMessage] = React.useState("");
+  const [currAccount, setCurrentAccount] = useState("");
+  const [currMintCount, setCurrMintCount] = useState(0);
+  const [maxMintCount, setMaxMintCount] = useState(1337);
+  const [myEpicNfts, setMyEpicNfts] = useState([]);
 
-  const TWITTER_HANDLE = 'andreasbigger';
-  const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
-  const OPENSEA_LINK = '';
-  const TOTAL_MINT_COUNT = 1337;
-
-  const contractAddress = "0x4260566c959ac89891A7D3AC053d1772303f51c3";
-  const contractABI = abi.abi;
-
+  // ** Try to connect to wallet
   const checkIfWalletIsConnected = () => {
-    // First make sure we have access to window.ethereum
     const { ethereum } = window;
     if(!ethereum) {
-      console.log("Make sure you have Metamask!");
+      console.error("Make sure you have Metamask!");
       return
     } else {
       console.log("We have the ethereum object!", ethereum)
@@ -38,18 +36,17 @@ export default function App() {
       if(accounts.length !== 0) {
         // ** Get the first account
         const account = accounts[0];
-        console.log("Using the first authorized account:", account);
 
         // ** Store the account
         setCurrentAccount(account);
 
-        // ** Get all the waves
-        getAllWaves();
+        // ** Get the contract mint count info
+        getMintCounts();
 
-        // ** Get the wave count
-        getWaveCount();
+        // ** Set up our event listener
+        setupEventListener();
       } else {
-        console.log("No authorized account found!");
+        console.error("No authorized account found!");
       }
     })
   }
@@ -69,142 +66,202 @@ export default function App() {
     .catch((e) => console.log(e))
   }
 
-  const wave = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const waveportalContract = new ethers.Contract(contractAddress, contractABI, signer);
-
-    let count = await waveportalContract.getTotalWaves();
-    setCurrentWaveCount(count.toNumber());
-    console.log("Retrieved total wave count...", count.toNumber());
-
-    const waveTxn = await waveportalContract.wave(message, { gasLimit: 300000 });
-    console.log("Mining...", waveTxn.hash);
+  const askContractToMintNft = async () => {
     try {
-      await waveTxn.wait();
-      console.log("Mined --", waveTxn.hash);
-    } catch (e) {
-      console.error(e);
-      alert("Your transaction failed!!");
+      const { ethereum } = window;
+
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        console.log("Going to pop wallet now to pay gas...")
+        let nftTxn = await connectedContract.makeAnEpicNFT();
+
+        console.log("Mining...please wait.")
+        await nftTxn.wait();
+
+        console.log(`Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`);
+
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error)
     }
-
-    count = await waveportalContract.getTotalWaves();
-    setCurrentWaveCount(count.toNumber());
-    console.log("Retrieved total wave count...", count.toNumber());
   }
 
-  const getWaveCount = async () => {
+  // ** Refactor logic to fetch the MAX_MINT_COUNT and the current tokenId
+  const getMintCounts = async () => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
-    const waveportalContract = new ethers.Contract(contractAddress, contractABI, signer);
-    let count = await waveportalContract.getTotalWaves();
-    setCurrentWaveCount(count.toNumber());
+    const eContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    // let max_count = await eContract.getMaxMintCount();
+    // setMaxMintCount(max_count.toNumber());
+    // let curr_count = await eContract.currentMintCount();
+    // setCurrMintCount(curr_count.toNumber());
   }
 
-  const getAllWaves = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const waveportalContract = new ethers.Contract(contractAddress, contractABI, signer);
+  // ** Setup our listener
+  const setupEventListener = async () => {
+    try {
+      const { ethereum } = window;
 
-    let waves = await waveportalContract.getAllWaves();
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    let wavesCleaned = [];
-    waves.forEach((wave) => {
-      wavesCleaned.push({
-        address: wave.waver,
-        timestamp: new Date(wave.timestamp * 1000),
-        message: wave.message
-      })
-    })
+        connectedContract.on("EpicMinted", (id, from) => {
+          let tokenId = id.toNumber();
+          let sender = from;
 
-    setAllWaves(wavesCleaned);
+          // ** Update the current minted count
+          setCurrMintCount(currMintCount + 1);
 
-    waveportalContract.on("NewWave", (from, timestamp, message) => {
-      console.log("NewWave", from, timestamp, message)
-      setAllWaves(oldArray => [...oldArray, {
-        address: from,
-        timestamp: new Date(timestamp * 1000),
-        message: message
-      }])
-    })
+          console.log("Inside Event listener - sender:", sender);
+          console.log("Inside Event Listener - currAccount:", currAccount);
+          if (currAccount === sender) {
+            setMyEpicNfts(oldArray => [...oldArray, {
+              address: sender,
+              // timestamp: new Date(timestamp * 1000),
+              tokenId: tokenId,
+              opensea: `https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`
+            }])
+          }
+
+          // TODO: send a react-toast-notif that one was minted
+        });
+
+        console.log("Setup event listener!")
+
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error)
+    }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     checkIfWalletIsConnected();
-    // eslint-disable-next-line
   }, [])
 
   return (
     <div className="App">
       <div className="container">
         <div className="header-container">
-          <p className="header gradient-text">
-            <span role="img" aria-label="wave">⚡</span> EpicNFTs <span role="img" aria-label="wave">📄</span>
+          <p className="header">
+            <span role="img" aria-label="wave">⚡</span>
+            <span className="gradient-text">The Epics</span>
+            <img alt="Contract Logo" className="contract-logo" src={contractSVG} />
           </p>
           <p className="sub-text">
-            Each unique. Each beautiful. Discover your NFT today.
+            Unique, Beautiful Dinosaurs and Caves inspired by {" "}
+            <span className="loot-gradient-text">
+              <a
+                className="no-decoration"
+                href="https://lootproject.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Loot
+              </a>
+            </span>
           </p>
-          <button className="waveButton cta-button connect-wallet-button" onClick={wave}>
-            Mint an EpicNFT!
-          </button>
+          <div className="bio">
+            <span className="bio-text">{currMintCount}/{maxMintCount}</span> Epics have been minted!
+          </div>
+          {currAccount ? (
+            <button className="waveButton cta-button connect-wallet-button" onClick={askContractToMintNft}>
+              Mint an Epic!
+            </button>
+          ) : null}
           {currAccount ? null : (
             <button className="waveButton cta-button connect-wallet-button" onClick={connectWallet}>
               Connect Wallet
             </button>
           )}
+
+          {myEpicNfts.length > 0 ? (
+            <p className="sub-text">
+              You just minted these Epics!
+            </p>
+          ) : (
+            currAccount ?
+            (<div>
+            <p className="sub-text">
+              Wallet{" "}
+              <a
+                className="no-decoration"
+                href={`https://etherscan.io/${currAccount}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {currAccount.substring(0, 4)}..{currAccount.substring(currAccount.length - 2)}
+              </a>
+              {" "}hasn't minted any Epics recently!
+            </p>
+            <p className="sub-text">
+              Mint some, and they'll show up here!
+            </p>
+            </div>) : null
+          )}
+          {myEpicNfts.map((epic, index) => {
+            return (
+              <div key={Object.entries(epic).toString() + index.toString()} style={{backgroundColor: "OldLace", marginTop: "16px", padding: "8px"}}>
+                <div>Address: {epic.address}</div>
+                <div>TokenId: {epic.tokenId.toString()}</div>
+                <div><a href={epic.opensea}>View on Opensea</a></div>
+              </div>
+            )
+          })}
+
+        {/*
+        // TODO: Gallery view using getBalance ?
+        */}
         </div>
-        <div className="footer-container">
-          <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
-          <a
-            className="footer-text"
-            href={TWITTER_LINK}
-            target="_blank"
-            rel="noreferrer"
-          >{`built on @${TWITTER_HANDLE}`}</a>
+        <div className="footer-wrapper">
+          <div className="footer-container text-sm">
+            <p className="white-text">
+              Built with ❤️️ by{" "}
+              <a
+                className="footer-text"
+                href={TWITTER_LINK}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {`@${TWITTER_HANDLE}`}
+              </a>
+            </p>
+          </div>
+          <div className="footer-container text-sm">
+            {/* <img alt="Unicorn Logo" className="uni-logo" src={twitterLogo} /> */}
+            <p className="white-text">
+              h/t{" "}
+              <a
+                className="footer-text"
+                href={BUILDSPACE_TWITTER_LINK}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {`@${BUILDSPACE_TWITTER_HANDLE}`}
+              </a>
+              {" "} for the amazing course!
+            </p>
+          </div>
+          <div className="text-sm p-5 md:p-16 white-text">
+            <A href={`https://rinkeby.etherscan.io/address/${CONTRACT_ADDRESS}`}>Etherscan</A> &bull;{" "}
+            <A href="https://opensea.io/collection/theepics">OpenSea</A> &bull;{" "}
+            <A href="https://github.com/abigger87/epic-nfts">Contract Source</A> &bull;{" "}
+            <A href="https://github.com/abigger87/epic-nfts-ui">UI Source</A> &bull;{" "}
+            <A href="https://twitter.com/andreasbigger">Twitter</A> &bull;{" "}
+            <span className="white-text">There's no Discord</span>
+          </div>
         </div>
       </div>
     </div>
-  
-    // <div className="mainContainer">
-
-    //   <div className="dataContainer">
-    //     <div className="header">
-    //     <span role="img" aria-label="wave">⚡</span> EpicNFTs <span role="img" aria-label="wave">📄</span>
-    //     </div>
-
-    //     <div className="bio">
-    //     Current Minted EpicNFTs: {currWaveCount}
-    //     </div>
-
-    //     <button className="waveButton" onClick={wave}>
-    //       Mint an EpicNFT!
-    //     </button>
-
-    //     {currAccount ? null : (
-    //       <button className="waveButton" onClick={connectWallet}>
-    //         Connect Wallet
-    //       </button>
-    //     )}
-
-    //     {allWaves.map((wave, index) => {
-    //       return (
-    //         <div key={Object.entries(wave).toString() + index.toString()} style={{backgroundColor: "OldLace", marginTop: "16px", padding: "8px"}}>
-    //           <div>Address: {wave.address}</div>
-    //           <div>Time: {wave.timestamp.toString()}</div>
-    //           <div>Message: {wave.message}</div>
-    //         </div>
-    //       )
-    //     })}
-    //   </div>
-    //   <div className="footer-container">
-    //       <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
-    //       <a
-    //         className="footer-text"
-    //         href={TWITTER_LINK}
-    //         target="_blank"
-    //         rel="noreferrer"
-    //       >{`built on @${TWITTER_HANDLE}`}</a>
-    //     </div>
-    // </div>
   );
 }
+
+const A = (props) => <a className="text-blue-500 no-decoration" {...props} />;

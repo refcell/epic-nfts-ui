@@ -1,5 +1,6 @@
 {
   "name": "epic-nfts-ui",
+  "description": "A dapp built for the Buildspace NFT Minting course Alkes Cohort.",
   "version": "0.1.0",
   "private": false,
   "author": "Andreas Bigger <bigger@usc.edu>",
