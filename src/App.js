@@ -13,14 +13,24 @@ import confirmedSVG from './assets/checked_contract.svg';
 import heartSVG from './assets/heart.svg';
 import dropSVG from './assets/drop.svg';
 
+const TESTNET_SITE = true;
+
 // ** Immutables
 const BUILDSPACE_TWITTER_HANDLE = "_buildspace";
 const BUILDSPACE_TWITTER_LINK = `https://twitter.com/${BUILDSPACE_TWITTER_HANDLE}`;
 const TWITTER_HANDLE = 'andreasbigger';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
-const CONTRACT_ADDRESS = "0x9548a49f25b1C80FB451ec40cC0401C067D4F6AF";
+const CONTRACT_ADDRESS = TESTNET_SITE ?
+  "0x9548a49f25b1C80FB451ec40cC0401C067D4F6AF" :
+  "0x0"
+;
 const CONTRACT_ABI = abi.abi;
-const OPENSEA_COLLECTION_URL = "https://testnets.opensea.io/collection/the-epics-v2";
+const OPENSEA_COLLECTION_URL = TESTNET_SITE ?
+  "https://testnets.opensea.io/collection/the-epics-v2" :
+  "https://opensea.io/collection/the-epics-v2"
+;
+
+const DEPLOYED_CHAINS = [4];
 
 export default function App() {
   const [currAccount, setCurrentAccount] = useState(null);
@@ -28,6 +38,7 @@ export default function App() {
   const [maxMintCount, setMaxMintCount] = useState(1337);
   const [myEpicNfts, setMyEpicNfts] = useState([]);
   const [toastLink, setToastLink] = useState("");
+  const [chainId, setChainId] = useState(1);
 
   // ** Mining state variables
   const [isMining, setIsMining] = useState(false);
@@ -36,6 +47,14 @@ export default function App() {
   // ** Gallery Vars
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingGallery, setLoadingGallery] = useState(false);
+
+
+  // ** Refactored get chain id logic from provider
+  const getChainId = async () => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const { chainId } = await provider.getNetwork()
+    setChainId(chainId);
+  }
 
   // ** Try to connect to wallet
   const checkIfWalletIsConnected = () => {
@@ -55,13 +74,13 @@ export default function App() {
     // ** Try to get access to the user's wallet
     ethereum.request({ method: 'eth_accounts' })
     .then((accounts) => {
-      console.log("inside ethereum request object...");
-      console.log(accounts)
       // ** There could be multiple accounts
       if(accounts.length !== 0) {
         // ** Get the first account
         let account = accounts[0].toString().toLowerCase();
-        console.log("setting current account:", account);
+
+        // ** Get the chainId
+        getChainId();
 
         // ** Store the account
         setCurrentAccount(account);
@@ -124,6 +143,9 @@ export default function App() {
     .then((accounts) => {
       let account = accounts[0].toString().toLowerCase();
       setCurrentAccount(account);
+
+      // ** Get the chainId
+      getChainId();
 
       // ** Get the contract mint count info
       getMintCounts();
@@ -193,13 +215,24 @@ export default function App() {
 
   // ** Refactor logic to fetch the MAX_MINT_COUNT and the current tokenId
   const getMintCounts = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const eContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    let max_count = await eContract.getMaxMintCount();
-    setMaxMintCount(max_count.toNumber());
-    let curr_count = await eContract.currentMintCount();
-    setCurrMintCount(curr_count.toNumber());
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const eContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      let max_count = await eContract.getMaxMintCount();
+      setMaxMintCount(max_count.toNumber());
+      let curr_count = await eContract.currentMintCount();
+      setCurrMintCount(curr_count.toNumber());
+    } catch (e) {
+      toast.error('Failed to load the maximum mint count, make sure you are on the Rinkeby Testnet!', {
+        position: "top-left",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
   }
 
   // ** Setup our listener
@@ -275,6 +308,9 @@ export default function App() {
             <img alt="Contract Logo" className="contract-logo" src={contractSVG} />
           </p>
           <p className="sub-text">
+            🚨 Contracts only deployed on the Rinkeby Testnet 🚨
+          </p>
+          <p className="sub-text">
             Unique, Beautiful <span className="rainbow bg-clip-text text-transparent font-bold">Dinosaurs and Caves</span> inspired by {" "}
             <span className="loot-gradient-text">
               <a
@@ -287,18 +323,20 @@ export default function App() {
               </a>
             </span>
           </p>
-          <div className="bio">
-            <span className="bio-text">{currMintCount}/{maxMintCount}</span> Epics have been minted!
-          </div>
+          {DEPLOYED_CHAINS.includes(chainId) ? (
+            <div className="bio">
+              <span className="bio-text">{currMintCount}/{maxMintCount}</span> Epics have been minted!
+            </div>
+          ) : null}
           <div style={{display: 'flex', flexDirection:'column'}}>
             <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: 'auto'}}>
               {currAccount && !isMining && !isConfirmed ? (
                 <button
-                  disabled={currMintCount >= maxMintCount ? true : false}
+                  disabled={(currMintCount >= maxMintCount || !DEPLOYED_CHAINS.includes(chainId)) ? true : false}
                   className="waveButton cta-button connect-wallet-button"
                   onClick={askContractToMintNft}
                   style={{
-                    opacity: currMintCount >= maxMintCount ? 0.5 : 1,
+                    opacity: (currMintCount >= maxMintCount || !DEPLOYED_CHAINS.includes(chainId)) ? 0.5 : 1,
                   }}
                   >
                   Mint an Epic!
