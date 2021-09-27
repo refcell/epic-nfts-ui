@@ -211,13 +211,13 @@ md:p-16 {
 }
 
 .contract-logo {
-  width: 30px;
+  width: 36px;
   align-items: center;
   justify-content: center;
-  height: 30px;
+  height: 36px;
   margin-top: auto;
   margin-bottom: auto;
-  padding-left: 0.1em;
+  padding-left: 0.3em;
 }
 
 .white-text {

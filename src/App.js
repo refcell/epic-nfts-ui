@@ -100,15 +100,6 @@ export default function App() {
       // if(address == currAccount) {
       // }
     }));
-    // events.forEach((e, i) => {
-    //   console.log(e.getTransaction());
-    //   console.log(e.address);
-    //   console.log(currAccount);
-    //   console.log("e.address == currAccount?", e.address == currAccount);
-    //   if(e.address == currAccount) {
-    //     tokens.push(Object.assign({}, e, { tokenId: i }));
-    //   }
-    // })
     setMyEpicNfts(tokens);
     setLoadingGallery(false);
   }
@@ -190,24 +181,29 @@ export default function App() {
         const signer = provider.getSigner();
         const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
+        console.log("got signer:", signer);
+
         connectedContract.on("EpicMinted", (id, from) => {
           let tokenId = id.toNumber();
           let sender = from;
 
+          console.log("inside connectedContract.on EpicMinted")
+
           // ** Update the current minted count
           setCurrMintCount(tokenId + 1);
 
-          console.log("Inside Event listener - sender:", sender);
-          console.log(currAccount);
-          console.log("Inside Event Listener - currAccount:", currAccount);
-          console.log("Inside Event Listener - tokenId:", tokenId);
-          if (currAccount === sender) {
-            setMyEpicNfts(oldArray => [...oldArray, {
-              address: sender,
-              tokenId: tokenId,
-              opensea: `https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`
-            }])
-          }
+          loadGallery();
+          // console.log("Inside Event listener - sender:", sender);
+          // console.log(currAccount);
+          // console.log("Inside Event Listener - currAccount:", currAccount);
+          // console.log("Inside Event Listener - tokenId:", tokenId);
+          // if (currAccount === sender) {
+          //   setMyEpicNfts(oldArray => [...oldArray, {
+          //     address: sender,
+          //     tokenId: tokenId,
+          //     opensea: `https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}`
+          //   }])
+          // }
 
           toast.success(`🦄 NFT Minted! View at:\n <https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId}>`, {
             position: "top-left",
@@ -241,7 +237,7 @@ export default function App() {
       <div className="container">
         <div className="header-container">
           <p className="header">
-            <span role="img" aria-label="wave">⚡</span>
+            <span style={{ marginRight: '0.3em' }} role="img" aria-label="wave">⚡</span>
             <span className="gradient-text">The Epics</span>
             <img alt="Contract Logo" className="contract-logo" src={contractSVG} />
           </p>
@@ -288,7 +284,18 @@ export default function App() {
             </button>
           )}
 
-          <div style={{paddingTop: '1em', display: 'flex', justifyContent: 'center'}}>
+          <div
+            style={{
+              padding: '1em',
+              display: 'flex',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              // maxHeight: '600px',
+              overflow: 'scroll',
+              maxWidth: '1000px',
+              margin: 'auto',
+              flexGrow: 1
+            }}>
             {initialLoading ? (
               <div style={{display: 'flex', flexDirection: 'column', margin: 'auto'}}>
                 <img alt="Loading Logo" className="loading-logo" src={dropSVG} />
@@ -322,7 +329,7 @@ export default function App() {
                   key={Object.entries(epic).toString() + index.toString()}
                   style={{
                     margin: '1em',
-                    padding: '8px',
+                    padding: '1em',
                     maxWidth: '260px',
                     wordBreak: 'break-all',
                     borderRadius: '4px',
