@@ -11,13 +11,14 @@ import contractSVG from './assets/contract.svg';
 import miningSVG from './assets/3dprinting.svg';
 import confirmedSVG from './assets/checked_contract.svg';
 import heartSVG from './assets/heart.svg';
+import dropSVG from './assets/drop.svg';
 
 // ** Immutables
 const BUILDSPACE_TWITTER_HANDLE = "_buildspace";
 const BUILDSPACE_TWITTER_LINK = `https://twitter.com/${BUILDSPACE_TWITTER_HANDLE}`;
 const TWITTER_HANDLE = 'andreasbigger';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
-const CONTRACT_ADDRESS = "0x0a2315A245c0E9d3F0275e0733892Ed76Aa2d6d6";
+const CONTRACT_ADDRESS = "0x9548a49f25b1C80FB451ec40cC0401C067D4F6AF";
 const CONTRACT_ABI = abi.abi;
 
 export default function App() {
@@ -30,6 +31,10 @@ export default function App() {
   const [isMining, setIsMining] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
 
+  // ** Gallery Vars
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+
   // ** Try to connect to wallet
   const checkIfWalletIsConnected = () => {
     const { ethereum } = window;
@@ -38,18 +43,31 @@ export default function App() {
       return
     } else {
       console.log("We have the ethereum object!", ethereum)
+      try {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        console.log("Current address:", signer)
+      } catch (e) {
+        console.error("failed to extract <target>");
+      }
     }
 
     // ** Try to get access to the user's wallet
     ethereum.request({ method: 'eth_accounts' })
     .then((accounts) => {
+      console.log("inside ethereum request object...");
+      console.log(accounts)
       // ** There could be multiple accounts
       if(accounts.length !== 0) {
         // ** Get the first account
         const account = accounts[0];
+        console.log("setting current account:", account);
 
         // ** Store the account
-        setCurrentAccount(account);
+        setCurrentAccount(_old_account => account);
+
+        // ** Load Account Gallery
+        loadGallery();
 
         // ** Get the contract mint count info
         getMintCounts();
@@ -62,23 +80,63 @@ export default function App() {
     })
   }
 
+  const loadGallery = async () => {
+    setLoadingGallery(true);
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const eContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    let eventFilter = eContract.filters.EpicMinted();
+    let events = await eContract.queryFilter(eventFilter)
+    let tokens = [];
+    console.log("Found Events!", events);
+    await Promise.all(events.map(async (e, i) => {
+      let tx_res = await e.getTransaction();
+      let address = tx_res.from;
+      console.log(address);
+      console.log(currAccount);
+      console.log("address == currAccount?", address == currAccount);
+      // TODO: verify this == our current account
+      tokens.push({ tokenId: i, address: address });
+      // if(address == currAccount) {
+      // }
+    }));
+    // events.forEach((e, i) => {
+    //   console.log(e.getTransaction());
+    //   console.log(e.address);
+    //   console.log(currAccount);
+    //   console.log("e.address == currAccount?", e.address == currAccount);
+    //   if(e.address == currAccount) {
+    //     tokens.push(Object.assign({}, e, { tokenId: i }));
+    //   }
+    // })
+    setMyEpicNfts(tokens);
+    setLoadingGallery(false);
+  }
+
   const connectWallet = () => {
     const { ethereum } = window;
 
     if(!ethereum) {
-      alert("Get Metamask!");
+      toast.error('🦊 Missing Metamask!', {
+        position: "top-left",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
 
     ethereum.request({ method: 'eth_requestAccounts' })
     .then((accounts) => {
       console.log("Connected:", accounts[0]);
-      setCurrentAccount(accounts[0]);
+      // setCurrentAccount(accounts[0]);
 
-        // ** Get the contract mint count info
-        getMintCounts();
+      // ** Get the contract mint count info
+      getMintCounts();
 
-        // ** Set up our event listener
-        setupEventListener();
+      // ** Set up our event listener
+      setupEventListener();
     })
     .catch((e) => console.log(e))
   }
@@ -173,6 +231,8 @@ export default function App() {
 
   useEffect(() => {
     checkIfWalletIsConnected();
+    // ** After 4 seconds (one dropping animation cycle) we want to set initial load to false
+    setTimeout(() => setInitialLoading(false), 4000);
   }, [])
 
   return (
@@ -228,45 +288,59 @@ export default function App() {
             </button>
           )}
 
-          <div style={{paddingTop: '1em'}}>
-            {myEpicNfts.length > 0 ? (
-              <p className="sub-text">
-                You just minted these Epics!
-              </p>
-            ) : (
-              currAccount ?
-              (<div>
-              <p className="sub-text">
-                Wallet{" "}
-                <a
-                  className="no-decoration"
-                  href={`https://etherscan.io/${currAccount}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {currAccount.substring(0, 4)}..{currAccount.substring(currAccount.length - 2)}
-                </a>
-                {" "}hasn't minted any Epics recently!
-              </p>
-              <p className="sub-text">
-                Mint some, and they'll show up here!
-              </p>
-              </div>) : null
-            )}
-          </div>
-          {myEpicNfts.map((epic, index) => {
-            return (
-              <div key={Object.entries(epic).toString() + index.toString()} style={{backgroundColor: "OldLace", marginTop: "16px", padding: "8px"}}>
-                <div>Address: {epic.address}</div>
-                <div>TokenId: {epic.tokenId.toString()}</div>
-                <div><a href={epic.opensea}>View on Opensea</a></div>
+          <div style={{paddingTop: '1em', display: 'flex', justifyContent: 'center'}}>
+            {initialLoading ? (
+              <div style={{display: 'flex', flexDirection: 'column', margin: 'auto'}}>
+                <img alt="Loading Logo" className="loading-logo" src={dropSVG} />
+                <p style={{ fontStyle: 'italic', color: 'white', paddingBottom: '0.5em' }}>Loading your Epics...</p>
               </div>
-            )
-          })}
+            ) : null}
 
-        {/*
-        // TODO: Gallery view using getBalance ?
-        */}
+            {!initialLoading && !loadingGallery && myEpicNfts.length <= 0 ? (
+              <div style={{display: 'flex', flexDirection: 'column', margin: 'auto'}}>
+                <p className="sub-text">
+                  Wallet{" "}
+                  <a
+                    className="no-decoration"
+                    href={`https://etherscan.io/${currAccount}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {currAccount.substring(0, 4)}..{currAccount.substring(currAccount.length - 2)}
+                  </a>
+                  {" "}hasn't minted any Epics recently!
+                </p>
+                <p className="sub-text">
+                  Mint some, and they'll show up here!
+                </p>
+              </div>
+            ) : null}
+
+            {!initialLoading && myEpicNfts.length >= 0 ? myEpicNfts.sort((a, b) => a.tokenId > b.tokenId ? 1 : -1).map((epic, index) => {
+              return (
+                <div
+                  key={Object.entries(epic).toString() + index.toString()}
+                  style={{
+                    margin: '1em',
+                    padding: '8px',
+                    maxWidth: '260px',
+                    wordBreak: 'break-all',
+                    borderRadius: '4px',
+                    color: 'white',
+                    borderColor: 'white',
+                    borderWidth: '2px',
+                    borderStyle: 'solid'
+                  }}>
+                  <div className="lh15">TokenId: {epic.tokenId.toString()}</div>
+                  <div className="lh15">Address: {epic.address}</div>
+                  <div className="lh15"><a className="no-decoration" href={`https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${epic.tokenId.toString()}`}>View on Opensea</a></div>
+                  {/*
+                    // TODO: fetch the metadata for each and pull in the Base64 tokenURI as an svg!
+                  */}
+                </div>
+              )
+            }) : null}
+          </div>
         </div>
         <div className="footer-wrapper">
           <div className="footer-container text-sm">
@@ -303,7 +377,7 @@ export default function App() {
           </div>
           <div className="text-sm p-5 md:p-16 white-text">
             <A href={`https://rinkeby.etherscan.io/address/${CONTRACT_ADDRESS}`}>Etherscan</A> &bull;{" "}
-            <A href="https://opensea.io/collection/theepics">OpenSea</A> &bull;{" "}
+            <A href="https://testnets.opensea.io/collection/the-epics-v2">OpenSea</A> &bull;{" "}
             <A href="https://github.com/abigger87/epic-nfts">Contract Source</A> &bull;{" "}
             <A href="https://github.com/abigger87/epic-nfts-ui">UI Source</A> &bull;{" "}
             <A href="https://twitter.com/andreasbigger">Twitter</A> &bull;{" "}
