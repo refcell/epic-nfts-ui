@@ -94,14 +94,14 @@ export default function App() {
         // ** Set up our event listener
         setupEventListener(account);
       } else {
-        toast.error('No authorized accounts found! Please connect a metamask account!', {
-          position: "top-left",
-          autoClose: 3000,
-          hideProgressBar: true,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        // toast.error('No authorized accounts found! Please connect a metamask account!', {
+        //   position: "top-left",
+        //   autoClose: 3000,
+        //   hideProgressBar: true,
+        //   closeOnClick: true,
+        //   pauseOnHover: true,
+        //   draggable: true,
+        // });
       }
     })
   }
@@ -152,6 +152,9 @@ export default function App() {
 
       // ** Set up our event listener
       setupEventListener(account);
+
+      // ** Refresh page
+      checkIfWalletIsConnected();
     })
     .catch((e) => {
       toast.error('Failed to load metamask accounts! Please refresh the page!', {
@@ -367,9 +370,11 @@ export default function App() {
               </div>
             ) : null}
             {currAccount ? null : (
-              <button className="waveButton cta-button connect-wallet-button" onClick={connectWallet}>
-                Connect Wallet
-              </button>
+              <div style={{display: 'flex', flexDirection: 'column', margin: 'auto'}}>
+                <button className="waveButton cta-button connect-wallet-button" onClick={connectWallet}>
+                  Connect Wallet
+                </button>
+              </div>
             )}
           </div>
 
@@ -385,7 +390,7 @@ export default function App() {
               margin: 'auto',
               flexGrow: 1
             }}>
-            {initialLoading ? (
+            {initialLoading && currAccount !== null ? (
               <div style={{display: 'flex', flexDirection: 'column', margin: 'auto'}}>
                 <img alt="Loading Logo" className="loading-logo" src={dropSVG} />
                 <p style={{ fontStyle: 'italic', color: 'white', paddingBottom: '0.5em' }}>Loading your Epics...</p>
@@ -398,11 +403,14 @@ export default function App() {
                   Wallet{" "}
                   <a
                     className="no-decoration"
-                    href={`https://etherscan.io/${currAccount}`}
+                    href={`https://etherscan.io/${currAccount ? currAccount : ""}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {currAccount.substring(0, 4)}..{currAccount.substring(currAccount.length - 2)}
+                    {currAccount !== null ? (
+                      <span>{currAccount.substring(0, 4)}..{currAccount.substring(currAccount.length - 2)}</span>)
+                      : null
+                    }
                   </a>
                   {" "}hasn't minted any Epics recently!
                 </p>
